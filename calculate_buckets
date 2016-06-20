@@ -1,0 +1,30 @@
+#!/bin/bash
+
+
+GPFSDEV=$1
+
+QUIET=0
+PID=$$
+WORKDIR="/tmp/policy.${PID}"
+POLICY_FILE="${WORKDIR}/policy.in"
+LOGFILE="${WORKDIR}/policy.log"
+
+mkdir -p ${WORKDIR}
+
+echo "RULE 'listall' list 'all-files'" > ${POLICY_FILE}
+echo "SHOW( varchar(kb_allocated) || '  ' || varchar(file_size) || '  ' || varchar(user_id) || '  ' || fileset_name )" >> ${POLICY_FILE}
+echo "WHERE PATH_NAME LIKE '/${GPFSDEV}/%'" >> ${POLICY_FILE}
+
+if [ ${QUIET} -eq 1 ] ; then
+   mmapplypolicy ${GPFSDEV} -f ${WORKDIR} -P ${POLICY_FILE} -I defer &>${LOGFILE}
+else
+   mmapplypolicy ${GPFSDEV} -f ${WORKDIR} -P ${POLICY_FILE} -I defer 
+fi
+
+/root/calculate_buckets.pl ${WORKDIR}
+
+rm -Rf ${WORKDIR}
+
+
+
+
